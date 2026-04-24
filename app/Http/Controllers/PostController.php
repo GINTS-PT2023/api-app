@@ -25,12 +25,24 @@ class PostController extends Controller
         return['post' => $post];
     }
 
-    public function update(Request $request){
+    public function update(Request $request, $id){
+         $fields = $request->validate([
+            'title' => 'required|max:255',
+            'body' => 'required'
+        ]);
 
+        // $post = Post::update($fields);
+        
+        $post = Post::findOrFail($id);
+        $post->update($fields);
+
+
+        return['post' => $post];
     }
 
-    public function destroy(Request $request){
-
+    public function destroy(Request $request, $id){
+        $post = Post::findOrFail($id);
+        $post->delete();
     }
 
 }
