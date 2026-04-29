@@ -2,14 +2,28 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Request;
 use App\Models\Post;
 
 class PostController extends Controller
 {
 
+    // public static function middleware(){
+    //     return [new Middleware('auth:sanctum', except: ['index', 'show'])];
+    // }
+
+    public function __construct()
+    {
+        $this->middleware('auth:sanctum')->except(['index', 'show']);
+    }
+
     public function index(){
-        return Post::all();
+        return Post::with('user')->latest()->get();
+    }
+
+    public function show(Post $post){
+        return ['post' => $post, 'user' => $post->user];
     }
 
     public function store(Request $request){
@@ -17,70 +31,24 @@ class PostController extends Controller
             'title' => 'required|max:255',
             'body' => 'required'
         ]);
-        $post = Post::create($fields);
-        return['post' => $post];
+        $post = $request->user()->posts()->create($fields);
+        return['post' => $post, 'user' => $post->user];
     }
 
-    // public function store(StorePostRequest $request){
-    //     $post = Post::create($request->validated());
-    //     return ['post' => $post];
-    // }
-
-    // public function store(Request $request){
-    //     return [
-    //         'post' => Post::create(
-    //             $request->validate([
-    //                 'title' => 'required|max:255',
-    //                 'body' => 'required'
-    //             ])
-    //         )
-    //     ];
-    // }
-
-    // public function store(Request $request){
-    //     $request->validate([
-    //         'title' => 'required|max:255',
-    //         'body' => 'required'
-    //     ]);
-    //     $post = Post::create($request->only('title', 'body'));
-    //     return ['post' => $post];
-    // }
-
-    // public function store(Request $request){
-    //     $request->validate([
-    //         'title' => 'required|max:255',
-    //         'body' => 'required'
-    //     ]);
-    //     $post = new Post();
-    //     $post->title = $request->title;
-    //     $post->body = $request->body;
-    //     $post->save();
-    //     return ['post' => $post];
-    // }
-
-    // public function store(Request $request){
-    //     $post = Post::create(
-    //         $request->validate([
-    //             'title' => 'required|max:255',
-    //             'body' => 'required'
-    //         ])
-    //     );
-    //     return response()->json(['post' => $post], 201);
-    // }
-
-    public function update(Request $request, $id){
+    public function update(Request $request, Post $post){
+        Gate::authorize('modify', $post);
          $fields = $request->validate([
             'title' => 'required|max:255',
             'body' => 'required'
         ]);
-        $post = Post::findOrFail($id);
         $post->update($fields);
-        return['post' => $post];
+        return['post' => $post, 'user' => $post->user];
     }
 
-    public function destroy(Request $request, $id){
-        $post = Post::findOrFail($id);
+    public function destroy(Post $post){
+        Gate::authorize('modify', $post);
         $post->delete();
+        return ['message' => 'You just deleted the post!'];
     }
 
 }
